@@ -25,6 +25,8 @@ const locationMapFallback = document.querySelector("[data-map-fallback]");
 let activeOrderChooser = null;
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const mobileViewport = window.matchMedia("(max-width: 900px)");
+const isMobileViewport = () => mobileViewport.matches;
 const menuTitleSwitchDuration = prefersReducedMotion ? 0 : 260;
 const menuPanelSwitchDuration = prefersReducedMotion ? 0 : 380;
 const menuPanelEntryDuration = prefersReducedMotion ? 0 : 680;
@@ -153,7 +155,7 @@ function updateScrollUI() {
 
   progress.style.width = `${progressWidth}%`;
   header?.classList.toggle("is-scrolled", window.scrollY > 24);
-  if (!prefersReducedMotion) {
+  if (!prefersReducedMotion && !isMobileViewport()) {
     parallaxItems.forEach((item) => {
       const depth = Number(item.dataset.parallax || 0);
       item.style.transform = `translate3d(0, ${window.scrollY * depth * -0.12}px, 0)`;
@@ -400,6 +402,7 @@ function snapProductIntoView(card) {
 }
 
 menuOrderRoot?.addEventListener("pointerdown", (event) => {
+  if (isMobileViewport()) return;
   if (event.isPrimary === false || (event.pointerType === "mouse" && event.button !== 0)) return;
   if (isProductInteractiveTarget(event.target)) return;
 
@@ -413,28 +416,31 @@ menuOrderRoot?.addEventListener("pointerdown", (event) => {
     startY: event.clientY,
     moved: false,
   };
-});
+}, { passive: true });
 
 menuOrderRoot?.addEventListener("pointermove", (event) => {
+  if (isMobileViewport()) return;
   const state = productTapState;
   if (!state || state.pointerId !== event.pointerId || state.moved) return;
 
   const distance = Math.hypot(event.clientX - state.startX, event.clientY - state.startY);
   if (distance > productTapMovementThreshold) state.moved = true;
-});
+}, { passive: true });
 
 menuOrderRoot?.addEventListener("pointerup", (event) => {
+  if (isMobileViewport()) return;
   const state = productTapState;
   productTapState = null;
   if (!state || state.pointerId !== event.pointerId || state.moved || isProductInteractiveTarget(event.target)) return;
 
   const card = event.target instanceof Element ? event.target.closest(".menu-card") : null;
   if (card === state.card) snapProductIntoView(card);
-});
+}, { passive: true });
 
 menuOrderRoot?.addEventListener("pointercancel", () => {
+  if (isMobileViewport()) return;
   productTapState = null;
-});
+}, { passive: true });
 
 ["wheel", "touchmove", "pointerdown"].forEach((eventName) => {
   window.addEventListener(eventName, cancelProductSnap, { passive: true });
@@ -511,15 +517,17 @@ class MenuCategoryController {
     this.updateTitle({ immediate: true });
     this.updateStatus();
 
-    const alignInitialCategoryRail = () => {
-      window.requestAnimationFrame(() => {
-        this.refreshCategoryRailMetrics();
-        this.moveCategoryRail(this.tabs.find((tab) => tab.dataset.menuTab === this.activeTop), "neutral", { immediate: true });
-      });
-    };
-    alignInitialCategoryRail();
-    window.addEventListener("load", alignInitialCategoryRail, { once: true });
-    if (document.fonts?.ready) document.fonts.ready.then(alignInitialCategoryRail).catch(() => undefined);
+    if (!isMobileViewport()) {
+      const alignInitialCategoryRail = () => {
+        window.requestAnimationFrame(() => {
+          this.refreshCategoryRailMetrics();
+          this.moveCategoryRail(this.tabs.find((tab) => tab.dataset.menuTab === this.activeTop), "neutral", { immediate: true });
+        });
+      };
+      alignInitialCategoryRail();
+      window.addEventListener("load", alignInitialCategoryRail, { once: true });
+      if (document.fonts?.ready) document.fonts.ready.then(alignInitialCategoryRail).catch(() => undefined);
+    }
 
     this.tabs.forEach((tab) => {
       tab.addEventListener("click", () => this.handleTabClick(tab));
@@ -551,23 +559,25 @@ class MenuCategoryController {
       this.closeBurgerPopover({ restoreFocus: true });
     });
 
-    menuCategorySwitcher?.addEventListener("scroll", () => this.handleCategoryRailScroll(), { passive: true });
-    menuCategorySwitcher?.addEventListener("scrollend", () => this.handleCategoryRailScrollEnd(), { passive: true });
-    menuCategorySwitcher?.addEventListener("pointerdown", (event) => this.handleCategoryRailPointerDown(event));
-    menuCategorySwitcher?.addEventListener("pointermove", (event) => this.handleCategoryRailPointerMove(event), { passive: false });
-    menuCategorySwitcher?.addEventListener("pointerup", (event) => this.handleCategoryRailPointerEnd(event));
-    menuCategorySwitcher?.addEventListener("pointercancel", (event) => this.cancelCategoryRailPointer(event));
-    menuCategorySwitcher?.addEventListener("lostpointercapture", (event) => this.cancelCategoryRailPointer(event));
-    menuCategorySwitcher?.addEventListener("touchend", () => this.completeNativeTouchGesture(), { passive: true });
-    menuCategorySwitcher?.addEventListener("touchcancel", () => this.completeNativeTouchGesture(), { passive: true });
-    menuCategorySwitcher?.addEventListener("click", (event) => this.handleCategoryRailClick(event), true);
-    menuCategorySwitcher?.addEventListener("wheel", (event) => this.handleCategoryRailWheel(event), { passive: false });
-    window.addEventListener("resize", () => {
-      this.cancelCategoryRailMotion();
-      this.refreshCategoryRailMetrics();
-      if (this.burgerPopoverState === "opening" || this.burgerPopoverState === "open") this.positionBurgerPopover();
-      this.closeWhenBurgerLeavesRail();
-    });
+    if (!isMobileViewport()) {
+      menuCategorySwitcher?.addEventListener("scroll", () => this.handleCategoryRailScroll(), { passive: true });
+      menuCategorySwitcher?.addEventListener("scrollend", () => this.handleCategoryRailScrollEnd(), { passive: true });
+      menuCategorySwitcher?.addEventListener("pointerdown", (event) => this.handleCategoryRailPointerDown(event));
+      menuCategorySwitcher?.addEventListener("pointermove", (event) => this.handleCategoryRailPointerMove(event), { passive: false });
+      menuCategorySwitcher?.addEventListener("pointerup", (event) => this.handleCategoryRailPointerEnd(event));
+      menuCategorySwitcher?.addEventListener("pointercancel", (event) => this.cancelCategoryRailPointer(event));
+      menuCategorySwitcher?.addEventListener("lostpointercapture", (event) => this.cancelCategoryRailPointer(event));
+      menuCategorySwitcher?.addEventListener("touchend", () => this.completeNativeTouchGesture(), { passive: true });
+      menuCategorySwitcher?.addEventListener("touchcancel", () => this.completeNativeTouchGesture(), { passive: true });
+      menuCategorySwitcher?.addEventListener("click", (event) => this.handleCategoryRailClick(event), true);
+      menuCategorySwitcher?.addEventListener("wheel", (event) => this.handleCategoryRailWheel(event), { passive: false });
+      window.addEventListener("resize", () => {
+        this.cancelCategoryRailMotion();
+        this.refreshCategoryRailMetrics();
+        if (this.burgerPopoverState === "opening" || this.burgerPopoverState === "open") this.positionBurgerPopover();
+        this.closeWhenBurgerLeavesRail();
+      });
+    }
   }
 
   handleTabClick(tab) {
@@ -1280,6 +1290,7 @@ class MenuCategoryController {
   }
 
   moveCategoryRail(tab, direction = "neutral", { immediate = false } = {}) {
+    if (isMobileViewport()) return;
     const anchors = { forward: 0.44, backward: 0.56, neutral: 0.5 };
     const target = menuRailTargetFor(tab, anchors[direction] ?? anchors.neutral);
     if (target === null || !menuCategorySwitcher) return;
