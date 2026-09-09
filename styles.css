@@ -6898,6 +6898,19 @@ h2 {
   }
 }
 
+@media (max-width: 900px) {
+  #menu .menu-category-switcher {
+    overflow-x: auto;
+    overflow-y: hidden;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+    backdrop-filter: none;
+    box-shadow: none;
+    transition: none;
+    will-change: auto;
+  }
+}
+
 @media (max-width: 700px) {
   #menu .menu-category-navigation {
     width: 100%;
