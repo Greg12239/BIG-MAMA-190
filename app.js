@@ -532,9 +532,11 @@ class MenuCategoryController {
     this.tabs.forEach((tab) => {
       tab.addEventListener("click", () => this.handleTabClick(tab));
       tab.addEventListener("keydown", (event) => this.handleTabKeydown(event, tab));
-      ["pointerenter", "focusin", "pointerdown"].forEach((eventName) => {
-        tab.addEventListener(eventName, () => this.prewarmTopCategory(tab.dataset.menuTab), { passive: true });
-      });
+      if (!isMobileViewport()) {
+        ["pointerenter", "focusin", "pointerdown"].forEach((eventName) => {
+          tab.addEventListener(eventName, () => this.prewarmTopCategory(tab.dataset.menuTab), { passive: true });
+        });
+      }
     });
 
     burgerOptions.forEach((option) => {
@@ -1511,7 +1513,7 @@ class MenuCategoryController {
     this.updateTitle();
     this.updateStatus();
 
-    if (!railAlreadyAligned) this.moveCategoryRail(this.tabs[nextIndex], railDirection);
+    if (!isMobileViewport() && !railAlreadyAligned) this.moveCategoryRail(this.tabs[nextIndex], railDirection);
     this.transitionPanels({
       kind: "top",
       currentPanel,
